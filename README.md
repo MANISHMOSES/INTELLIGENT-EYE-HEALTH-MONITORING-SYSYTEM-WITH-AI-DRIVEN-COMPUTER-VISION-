@@ -1,45 +1,71 @@
-# INTELLIGENT-EYE-HEALTH-MONITORING-SYSYTEM-WITH-AI-DRIVEN-COMPUTER-VISION-
-AI-Based Eye Health Monitoring System
+import cv2
 
-An AI-driven system utilizing mobile apps, wearable devices, and computer vision software for accurate eye health evaluation.
+def run_camera_eye_detection():
+    # Load the pre-trained Haar Cascade classifier for eye detection
+    # Make sure 'haarcascade_eye.xml' is accessible (e.g., in your OpenCV data directory)
+    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    if eye_cascade.empty():
+        print("Error loading eye cascade classifier.")
+        print("Please ensure 'haarcascade_eye.xml' is in your OpenCV data path.")
+        return
 
-Features
+    print("🔍 Searching for available cameras...")
+    camera = None
+    for i in range(3):  # Try camera sources 0, 1, 2
+        # Use cv2.CAP_DSHOW on Windows, otherwise remove it
+        # Adjust based on your operating system
+        try:
+            cap = cv2.VideoCapture(i, cv2.CAP_DSHOW) # For Windows
+        except: # Fallback for non-Windows or if CAP_DSHOW is not needed
+            cap = cv2.VideoCapture(i)
 
-Captures visual data using mobile apps and wearable devices
+        if cap.isOpened():
+            print(f"✅ Camera initialized successfully at source {i}.")
+            camera = cap
+            break # Found a working camera, exit loop
+        else:
+            print(f"❌ Could not open camera with source {i}.")
+            if cap: # Release if it was opened but failed later
+                cap.release()
 
-Employs advanced image processing techniques
 
-Utilizes machine learning algorithms for precise analysis
+    if camera is None:
+        print("🚫 Error: Could not open any camera (sources 0, 1, 2).")
+        print("Please check camera connection, permissions, and ensure you are not in a headless environment.")
+        return
 
-Provides real-time insights into eye health conditions
+    print("Starting camera feed with eye detection. Press 'q' to stop.")
 
-Installation
+    while True:
+        ret, frame = camera.read()
 
-Clone the repository:
+        if not ret:
+            print("Error: Could not read frame.")
+            break
 
-git clone https://github.com/yourusername/ai-eye-health-monitoring.git
+        # Convert the frame to grayscale for eye detection
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-Navigate to the project folder:
+        # Detect eyes in the grayscale frame
+        eyes = eye_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-cd ai-eye-health-monitoring
+        # Draw rectangles around the detected eyes on the original color frame
+        for (x, y, w, h) in eyes:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2) # Draw a blue rectangle
 
-Follow the setup guide for mobile and wearable integration.
+        # Display the frame
+        cv2.imshow("Camera Feed with Eye Detection", frame)
 
-Usage
+        # Stop if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-Install the mobile application and connect to compatible wearable devices.
+    # Release camera and close all OpenCV windows
+    camera.release()
+    cv2.destroyAllWindows()
+    print("Camera released and windows closed.")
 
-Capture visual data through the app.
-
-Let the AI process the images and provide health insights.
-
-View results and recommended actions based on the analysis.
-
-Technologies Used
-
-Machine Learning (Computer Vision)
-
-Mobile Applications
-
-Wearable Device Integration
+# Run the function if the script is executed directly
+if __name__ == "__main__":
+    run_camera_eye_detection()
 
